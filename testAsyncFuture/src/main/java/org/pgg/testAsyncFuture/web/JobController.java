@@ -1,5 +1,6 @@
 package org.pgg.testAsyncFuture.web;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +38,9 @@ public class JobController {
 		HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Type", "application/json");
         
+        logger.debug("Calling @Async work()");
         jobStatus = slowService.work();
+        logger.debug("Returned @Async work(). jobStatus.isDone(): " + jobStatus.isDone());
         
         return new ResponseEntity<String>(new JSONSerializer().exclude("*.class").serialize("job started"), headers, HttpStatus.OK);
 	}
@@ -48,10 +51,21 @@ public class JobController {
 		HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Type", "application/json");
         
-        Map<Boolean, List<JobUnit>> jobStatusMap = new HashMap<>();
         
+        Map<Boolean, List<JobUnit>> jobStatusMap = new HashMap<>();
+        List<JobUnit> jobUnitList;
         try {
-			jobStatusMap.put(slowService.isDone(), jobStatus.get());
+        	logger.debug("jobStatus.isDone(): " + jobStatus.isDone());
+        	
+        	if(jobStatus.isDone()) {
+        		jobUnitList = jobStatus.get();
+        	} else {
+        		jobUnitList = slowService.doneSoFar();
+        	}
+        	
+        	jobStatusMap.put(jobStatus.isDone(), jobUnitList);
+        	
+			logger.debug("jobUnitList.size(): " + jobUnitList.size());
 		} catch (InterruptedException | ExecutionException e) {
 			logger.debug(e.getMessage(), e);
 		}

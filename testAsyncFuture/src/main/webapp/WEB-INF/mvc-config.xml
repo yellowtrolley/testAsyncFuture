@@ -7,7 +7,14 @@
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
-	<context:component-scan base-package="org.pgg.testAsyncFuture"/>  
+	<!-- Just autodetect POJOs labeled with the @Controller annotation. 
+		Otherwise beans will be scanned in both contexts and this will override the parent (application-context.xml).
+		See http://stackoverflow.com/questions/7774295/spring-xml-file-configuration-hierarchy-help-explanation/7774597#7774597
+		For example, a bean with the @Async method will be scanned in both contexts, and the version from the child context (DispatcherServlet)  
+		will override the one in the parent context, where <task:annotation-driven /> was declared. -->
+	<context:component-scan base-package="org.pgg.testAsyncFuture" use-default-filters="false">
+        <context:include-filter expression="org.springframework.stereotype.Controller" type="annotation"/>
+    </context:component-scan>
     
     <!-- Turns on support for mapping requests to Spring MVC @Controller methods
          Also registers default Formatters and Validators for use across all @Controllers -->

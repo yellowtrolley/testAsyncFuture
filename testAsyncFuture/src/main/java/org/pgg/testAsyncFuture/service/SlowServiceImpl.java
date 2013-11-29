@@ -1,11 +1,9 @@
 package org.pgg.testAsyncFuture.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.pgg.testAsyncFuture.model.JobUnit;
@@ -21,44 +19,34 @@ public class SlowServiceImpl implements SlowService {
 	
 	List<JobUnit> jobUnitList;
 	AtomicBoolean working = new AtomicBoolean(false);
-	int counter;
-	
-	ScheduledExecutorService executor = Executors.newScheduledThreadPool(5);
 	
 	@Override
 	@Async
 	public Future<List<JobUnit>> work() {
 		if(working.compareAndSet(false, true)) {
-			counter = 25;
-			jobUnitList = new ArrayList<>();
+			jobUnitList = Collections.synchronizedList(new ArrayList<JobUnit>());
 	
-			long delay = 5000;
 			for(int i=0 ; i<25 ; i++) {
-				takeAlongTime(i, delay);				
-				delay = delay + 1000;
+				try {
+					logger.debug("Thread going to sleep " + i);
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+				jobUnitList.add(new JobUnit("Job unit " + i));
+				logger.debug("Added Job unit " + i + " to jobUnitList");
 			}
 			
+			working.set(false);
 		}
+		
 		return new AsyncResult<List<JobUnit>>(jobUnitList);
 	}
-	
-	
-	
-	public boolean isDone() {
-		return counter == 0;
+
+	@Override
+	public List<JobUnit> doneSoFar() {
+		return jobUnitList;
 	}
 	
-	private void takeAlongTime(final int i, final long delay) {
-		executor.schedule(new Runnable() {
-			@Override
-			public void run() {
-				jobUnitList.add(new JobUnit("Job unit " + i));
-				counter--;
-				
-				if(counter == 0) {
-					working.set(false);
-				}
-			}}, 
-			delay, TimeUnit.MILLISECONDS);
-	}
 }

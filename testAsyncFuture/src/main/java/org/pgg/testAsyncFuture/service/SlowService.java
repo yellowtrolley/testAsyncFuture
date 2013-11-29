@@ -8,6 +8,5 @@ import org.pgg.testAsyncFuture.model.JobUnit;
 public interface SlowService {
 
 	Future<List<JobUnit>> work();
-	boolean isDone();
-
+	List<JobUnit> doneSoFar();
 }
